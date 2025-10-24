@@ -1,1 +1,24 @@
-
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Drive/Главная</title>
+    <style>
+    </style>
+</head>
+<body>
+    <div id="logo">DRIVE</div>
+    <nav>
+        <a href="index.html">Автопарк</a>
+        <a href="available.html">Выбрать авто</a>
+        <a href="contracts.html">Архив договоров</a>
+    </nav>
+    <script>
+        document.querySelectorAll('nav a').forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
