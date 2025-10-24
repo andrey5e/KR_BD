@@ -102,3 +102,158 @@
     
     <script>
         const apiUrl = 'http://localhost:5500';
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(tab).classList.add('active');
+            if (tab === 'clients') loadClients();
+            else if (tab === 'contracts') { loadClientsForSelect(); loadCarsForSelect(); loadContracts(); }
+        }
+
+        async function loadClients() {
+            try {
+                const response = await fetch(`${apiUrl}/clients`);
+                const clients = await response.json();
+                const list = document.getElementById('clientList');
+                list.innerHTML = '';
+                clients.forEach(client => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div>
+                            <strong>${client.full_name}</strong><br>
+                            Тел: ${client.phone}<br>
+                            ВУ: ${client.license_number}<br>
+                            Дата рождения: ${client.birth_date}
+                        </div>
+                        <div>
+                            <button onclick="editClient(${client.id})">Редактировать</button>
+                            <button onclick="deleteClient(${client.id})" class="danger">Удалить</button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки клиентов:', err);
+            }
+        }
+
+        function editClient(id) {
+            openClientModal(id);
+        }
+        
+        function openClientModal(id = null) {
+            document.getElementById('clientModal').style.display = 'block';
+            if (id) {
+                document.getElementById('clientModalTitle').textContent = 'Редактировать клиента';
+                fetch(`${apiUrl}/clients/${id}`)
+                    .then(r => r.json())
+                    .then(client => {
+                        document.getElementById('clientId').value = client.id;
+                        document.getElementById('fullName').value = client.full_name;
+                        document.getElementById('phone').value = client.phone;
+                        document.getElementById('license').value = client.license_number;
+                        document.getElementById('birthDate').value = client.birth_date;
+                    });
+            } else {
+                document.getElementById('clientModalTitle').textContent = 'Добавить клиента';
+                document.getElementById('clientForm').reset();
+            }
+        }
+        
+        function closeClientModal() {
+            document.getElementById('clientModal').style.display = 'none';
+        }
+        
+        document.getElementById('clientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('clientId').value;
+            const data = {
+                full_name: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                license_number: document.getElementById('license').value,
+                birth_date: document.getElementById('birthDate').value
+            };
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${apiUrl}/clients/${id}` : `${apiUrl}/clients`;
+            try {
+                await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                closeClientModal();
+                loadClients();
+            } catch (err) {
+                console.error('Ошибка сохранения:', err);
+            }
+        });
+        
+        async function deleteClient(id) {
+            if (confirm('Точно удалить клиента?')) {
+                try {
+                    await fetch(`${apiUrl}/clients/${id}`, { method: 'DELETE' });
+                    loadClients();
+                } catch (err) {
+                    console.error('Ошибка удаления:', err);
+                }
+            }
+        }
+
+        async function loadClientsForSelect() {
+            try {
+                const response = await fetch(`${apiUrl}/clients`);
+                const clients = await response.json();
+                const select = document.getElementById('clientSelect');
+                select.innerHTML = '<option value="">Выберите клиента</option>';
+                clients.forEach(client => {
+                    select.innerHTML += `<option value="${client.id}">${client.full_name}</option>`;
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки клиентов:', err);
+            }
+        }
+        
+        async function loadCarsForSelect() {
+            try {
+                const response = await fetch(`${apiUrl}/cars`);
+                const cars = await response.json();
+                const select = document.getElementById('carSelect');
+                select.innerHTML = '<option value="">Выберите авто</option>';
+                cars.forEach(car => {
+                    select.innerHTML += `<option value="${car.id}">${car.license_plate}</option>`;
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки авто:', err);
+            }
+        }
+        
+        async function loadContracts() {
+            try {
+                const response = await fetch(`${apiUrl}/contracts`);
+                const contracts = await response.json();
+                const activeList = document.getElementById('activeContracts');
+                const completedList = document.getElementById('completedContracts');
+                activeList.innerHTML = '';
+                completedList.innerHTML = '';
+                contracts.forEach(contract => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="contract-details">
+                            Клиент: ${contract.client_full_name} | Авто: ${contract.car_license_plate} | С: ${contract.start_date} | По: ${contract.end_date} | Цена: ${contract.total_price} руб.
+                        </div>
+                        ${contract.status === 'active' ? `<button onclick="completeContract(${contract.id})" class="danger">Завершить</button>` : ''}
+                    `;
+                    if (contract.status === 'active') activeList.appendChild(li);
+                    else completedList.appendChild(li);
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки договоров:', err);
+            }
+        }
+        
+        function openContractModal() {
+            document.getElementById('contractModal').style.display = 'block';
+            document.getElementById('contractForm').reset();
+        }
+        
+        function closeContractModal() {
+            document.getElementById('contractModal').style.display = 'none';
+        }
