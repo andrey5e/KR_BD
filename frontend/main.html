@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Drive/Главная</title>
     <style>
-                body { 
+        body { 
             font-family: Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
@@ -15,6 +15,37 @@
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
+        }
+        #logo { 
+            font-size: 4em; 
+            font-weight: bold; 
+            color: #a50000; 
+            margin-bottom: 50px; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); 
+        }
+        nav { 
+            display: flex; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+        }
+        nav a { 
+            text-decoration: none; 
+            padding: 15px 30px; 
+            background: #ccc; 
+            color: black; 
+            border-radius: 10px; 
+            font-size: 1.2em; 
+            transition: background 0.3s; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+        }
+        nav a:hover { 
+            background: #a50000; 
+            color: white; 
+        }
+        nav a.active { 
+            background: #a50000; 
+            color: white; 
         }
     </style>
 </head>
