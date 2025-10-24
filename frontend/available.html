@@ -20,7 +20,6 @@
         input, button { margin: 5px 0; padding: 10px; font-family: Arial; }
         #errorMsg { color: rgb(0, 0, 0); display: none; margin-bottom: 10px; }
         h2 { margin-top: 20px; }
-
     </style>
 </head>
 <body>
@@ -54,3 +53,74 @@
             </form>
         </div>
     </div>
+    <script>
+        const apiUrl = 'http://localhost:5500';
+
+        async function loadAvailableCars() {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+            try {
+                const response = await fetch(`${apiUrl}/available-cars`);
+                const cars = await response.json();
+                const carList = document.getElementById('car');
+                carList.innerHTML = '';
+                cars.forEach(car => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        ${car.brand} ${car.model} (${car.year}) - ${car.color} - Номер: ${car.plate} - Цена: ${car.price}₽/сутки
+                        <button onclick="openBookingModal(${car.id})">Забронировать</button>
+                    `;
+                    carList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки доступных автомобилей:', error);
+                errorMsg.textContent = 'Не удалось загрузить список доступных автомобилей. Проверьте подключение к серверу.';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function openBookingModal(carId) {
+            document.getElementById('carId').value = carId;
+            document.getElementById('bookingModal').style.display = 'block';
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').style.display = 'none';
+            document.getElementById('bookingForm').reset();
+        }
+
+        document.getElementById('closeModal').onclick = closeBookingModal;
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('bookingModal')) {
+                closeBookingModal();
+            }
+        };
+
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const carId = document.getElementById('carId').value;
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            try {
+                const response = await fetch(`${apiUrl}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ car_id: carId, name, phone, email, start_date: startDate, end_date: endDate })
+                });
+                if (response.ok) {
+                    alert('Автомобиль успешно забронирован!');
+                    closeBookingModal();
+                    loadAvailableCars();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Ошибка бронирования: ${errorData.detail || 'Неизвестная ошибка'}`);
+                }
+            } catch (error) {
+                console.error('Ошибка бронирования:', error);
+                alert('Не удалось забронировать автомобиль. Проверьте подключение к серверу.');
+            }
+        });
