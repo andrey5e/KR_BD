@@ -30,3 +30,51 @@
         input:focus, select:focus { border-color: #007bff; outline: none; }
         .contract-details { font-size: 0.9em; color: #665; }
     </style>
+</head>
+<body>
+    <nav>
+        <a href="main.html">Главная</a>
+        <a href="index.html">Автопарк</a>
+        <a href="available.html">Выбрать авто</a>
+        <a href="contracts.html" class="active">Управление</a>
+    </nav>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('clients')">Клиенты</div>
+        <div class="tab" onclick="switchTab('contracts')">Договоры</div>
+    </div>
+
+    <div id="clients" class="tab-content active">
+        <h2>Управление клиентами</h2>
+        <button onclick="openClientModal()">Добавить клиента</button>
+        <h3>Список клиентов</h3>
+        <ul id="clientList"></ul>
+    </div>
+
+    <div id="contracts" class="tab-content">
+        <h2>Управление договорами</h2>
+        <button onclick="openContractModal()">Оформить договор</button>
+        <h3>Действующие договоры</h3>
+        <ul id="activeContracts"></ul>
+        <h3>Завершённые договоры</h3>
+        <ul id="completedContracts"></ul>
+    </div>
+
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeClientModal()">&times;</span>
+            <h2 id="clientModalTitle">Добавить клиента</h2>
+            <form id="clientForm">
+                <input type="hidden" id="clientId">
+                <label for="fullName">ФИО:</label>
+                <input type="text" id="fullName" required>
+                <label for="phone">Телефон:</label>
+                <input type="tel" id="phone" required>
+                <label for="license">Номер ВУ:</label>
+                <input type="text" id="license" required>
+                <label for="birthDate">Дата рождения:</label>
+                <input type="date" id="birthDate" required>
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
