@@ -99,7 +99,6 @@
             </form>
         </div>
     </div>
-    
     <script>
         const apiUrl = 'http://localhost:5500';
 
@@ -257,3 +256,46 @@
         function closeContractModal() {
             document.getElementById('contractModal').style.display = 'none';
         }
+        document.getElementById('contractForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                client_id: document.getElementById('clientSelect').value,
+                car_id: document.getElementById('carSelect').value,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                payment_date: document.getElementById('paymentDate').value,
+                total_price: parseFloat(document.getElementById('amount').value),
+                status: 'active'
+            };
+            try {
+                await fetch(`${apiUrl}/contracts`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(data) 
+                });
+                closeContractModal();
+                loadContracts();
+            } catch (err) {
+                console.error('Ошибка оформления:', err);
+            }
+        });
+        
+        async function completeContract(id) {
+            if (confirm('Завершить договор?')) {
+                try {
+                    await fetch(`${apiUrl}/contracts/${id}`, { 
+                        method: 'PUT', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ status: 'completed' }) 
+                    });
+                    loadContracts();
+                } catch (err) {
+                    console.error('Ошибка завершения:', err);
+                }
+            }
+        }
+
+        loadClients();
+    </script>
+</body>
+</html>
