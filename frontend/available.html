@@ -124,3 +124,13 @@
                 alert('Не удалось забронировать автомобиль. Проверьте подключение к серверу.');
             }
         });
+        document.querySelectorAll('nav a').forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+
+        loadAvailableCars();
+    </script>
+</body>
+</html>
