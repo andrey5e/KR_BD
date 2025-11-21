@@ -590,3 +590,173 @@
             input.value = formatPrice(val.toString());
             checkForm();
         });
+
+        function checkForm() {
+            const brand = document.getElementById('brand').value;
+            const model = document.getElementById('model').value;
+            const year = document.getElementById('year').value;
+            const color = document.getElementById('color').value;
+            const plate = document.getElementById('plate').value.replace(/\s/g, '');
+            const price = document.getElementById('price').value.replace(/\s/g, '');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (brand && model && year && color && validatePlate(plate) && price) {
+                submitBtn.disabled = false;
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        document.getElementById('addCarForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const brand = document.getElementById('brand').value;
+            const model = document.getElementById('model').value;
+            const year = document.getElementById('year').value;
+            const color = document.getElementById('color').value;
+            const plate = document.getElementById('plate').value.replace(/\s/g, '');
+            const price = document.getElementById('price').value.replace(/\s/g, '');
+
+            const data = { brand, model, year, color, plate, price };
+
+            try {
+                const response = await fetch(`${apiUrl}/cars`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    loadCars();
+                    this.reset();
+                    document.getElementById('model').disabled = true;
+                    document.getElementById('year').disabled = true;
+                    document.getElementById('color').disabled = true;
+                    document.getElementById('plate').disabled = true;
+                    document.getElementById('price').disabled = true;
+                    document.getElementById('submitBtn').disabled = true;
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Ошибка добавления автомобиля');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка добавления автомобиля. Проверьте подключение к серверу.');
+            }
+        });
+
+        let currentEditingCarId = null;
+
+        function openEditModal(carId, currentColor, currentPlate, currentPrice) {
+            currentEditingCarId = carId;
+            document.getElementById('editColor').value = currentColor;
+            document.getElementById('editPlate').value = formatAndValidatePlate(currentPlate.replace(/(.{1})(.{3})(.{2})(.{2})/, '\$1 \$2 \$3 \$4').trim());
+            document.getElementById('editPrice').value = formatPrice(currentPrice.toString());
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditingCarId = null;
+        }
+
+        document.getElementById('updateBtn').addEventListener('click', async function() {
+            const color = document.getElementById('editColor').value;
+            const plate = document.getElementById('editPlate').value.replace(/\s/g, '');
+            const price = document.getElementById('editPrice').value.replace(/\s/g, '');
+
+            if (!color || !validatePlate(plate) || !price || parseInt(price) <= 0) {
+                alert('Пожалуйста, заполните все поля корректно и убедитесь, что цена положительна.');
+                return;
+            }
+
+            const data = { color, plate, price };
+
+            try {
+                const response = await fetch(`${apiUrl}/cars/${currentEditingCarId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    loadCars();
+                    closeEditModal();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Ошибка обновления автомобиля');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка обновления автомобиля. Проверьте подключение к серверу.');
+            }
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', closeEditModal);
+
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        });
+
+        document.getElementById('editPlate').addEventListener('input', function(e) {
+            const input = e.target;
+            const value = input.value;
+            const formatted = formatAndValidatePlate(value);
+            input.value = formatted;
+        });
+
+        document.getElementById('editPlate').addEventListener('keydown', function(e) {
+            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+            const allowedChars = /^[АВЕКМНОРСТУХABEKMHOPCTYX\d]$/i;
+            if (!allowedKeys.includes(e.key) && !allowedChars.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        document.getElementById('editPrice').addEventListener('input', function(e) {
+            const input = e.target;
+            const value = input.value;
+            const formatted = formatPrice(value);
+            input.value = formatted;
+        });
+
+        document.getElementById('editIncreasePrice').addEventListener('click', function() {
+            const input = document.getElementById('editPrice');
+            let val = parseInt(input.value.replace(/\s/g, '')) || 0;
+            val += 250;
+            input.value = formatPrice(val.toString());
+        });
+
+        document.getElementById('editDecreasePrice').addEventListener('click', function() {
+            const input = document.getElementById('editPrice');
+            let val = parseInt(input.value.replace(/\s/g, '')) || 0;
+            val = Math.max(0, val - 250);
+            input.value = formatPrice(val.toString());
+        });
+
+        document.getElementById('car').addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.id) {
+                const carId = e.target.dataset.id;
+                const action = e.target.dataset.action;
+                if (action === 'edit') {
+                    fetch(`${apiUrl}/cars/${carId}`)
+                        .then(response => response.json())
+                        .then(car => {
+                            openEditModal(carId, car.color, car.license_plate, car.price);
+                        })
+                        .catch(error => {
+                            console.error('Ошибка загрузки данных автомобиля:', error);
+                            alert('Не удалось загрузить данные автомобиля.');
+                        });
+                } else if (action === 'delete') {
+                    deleteCar(carId);
+                }
+            }
+        });
+
+        loadCars();
+    </script>
+</body>
+</html>
