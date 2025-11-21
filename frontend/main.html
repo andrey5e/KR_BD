@@ -3,73 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <title>Drive/Главная</title>
-    <style>
+    <style nonce="abc123">
+        :root {
+            --bg-color: #fefff5;
+            --text-color: #000;
+            --nav-bg: #ccc;
+            --nav-hover: #a50000;
+            --logo-color: #a50000;
+            --shadow: rgba(0,0,0,0.3);
+        }
+        
         body { 
             font-family: Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f9f9f9; 
+            padding-top: 250px;
+            background-color: var(--bg-color); 
+            color: var(--text-color);
             text-align: center; 
-            height: 100vh; 
+            min-height: 65vh; 
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
-            align-items: center; 
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+            position: relative;
         }
+        
+        body.dark {
+            --bg-color: #333;
+            --text-color: #fff;
+            --nav-bg: #555;
+            --nav-hover: #a50000;
+            --logo-color: #ff6666;
+            --shadow: rgba(255,255,255,0.1);
+        }
+        
         #logo { 
+            position: absolute;
+            top: 250px;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 4em; 
             font-weight: bold; 
-            color: #a50000; 
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); 
+            color: var(--logo-color); 
+            text-shadow: 1px 1px 0px #cc0000, 2px 2px 0px #aa0000, 3px 3px 0px #880000, 4px 4px 10px var(--shadow); 
             line-height: 1;
+            z-index: 5;
+            margin: 0;
         }
         #logo .subtitle { 
             font-size: 0.7em;
             margin-top: 5px;
         }
+        
+        #login-form {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out, padding 0.5s ease-in-out, margin 0.5s ease-in-out;
+            overflow: hidden;
+            max-height: none;
+        }
+        #login-form input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+            width: 300px;
+        }
+        #login-form button {
+            padding: 10px 15px;
+            background: var(--nav-bg);
+            color: var(--text-color);
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #login-form button:hover {
+            background: var(--nav-hover);
+            color: white;
+        }
+        #error-msg {
+            color: #a50000;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+        
+        #welcome-msg {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            font-size: 1.2em;
+            color: #a50000;
+            font-weight: bold;
+            z-index: 1;
+        }
+        
         nav { 
-            display: flex; 
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
             gap: 20px; 
             flex-wrap: wrap; 
             justify-content: center; 
-            margin-top: 50px;
+            margin-top: -18px;
         }
         nav a { 
             text-decoration: none; 
-            padding: 15px 10px; 
-            background: #ccc; 
-            color: black; 
+            padding: 10px 12px;
+            background: var(--nav-bg); 
+            color: var(--text-color); 
             border-radius: 10px; 
             font-size: 1.2em; 
             transition: background 0.3s; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            box-shadow: 0 4px 8px var(--shadow); 
         }
         nav a:hover { 
-            background: #a50000; 
+            background: var(--nav-hover); 
             color: white; 
         }
         nav a.active { 
-            background: #a50000; 
+            background: var(--nav-hover); 
             color: white; 
+        }
+        
+        #theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--nav-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 10px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px var(--shadow);
+            z-index: 10;
+        }
+        #theme-toggle:hover {
+            background: var(--nav-hover);
+            color: white;
         }
     </style>
 </head>
 <body>
+    <button id="theme-toggle">☀️</button>
     <div id="logo">
         DRIVE
         <div class="subtitle">Прокат автомобилей</div>
     </div>
-    <nav>
-        <a href="index.html">Автопарк</a>
-        <a href="available.html">Выбрать авто</a>
-        <a href="contracts.html">Управление</a>
-    </nav>
-    <script>
-        document.querySelectorAll('nav a').forEach(link => {
-            if (link.href === window.location.href) {
-                link.classList.add('active');
-            }
-        });
-    </script>
-</body>
-</html>
+
+    <div id="login-form">
+        <input type="text" id="full-name" placeholder="Логин" required>
+        <input type="password" id="password" placeholder="Пароль" required>
+        <button id="login-btn">Войти</button>
+        <div id="error-msg"></div>
+    </div>
