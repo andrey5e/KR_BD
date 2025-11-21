@@ -269,3 +269,238 @@ def delete_insurance(insurance_id: int, db: Session = Depends(get_db)):
     return {"message": "Insurance deleted"}
 
 # Maintenance Endpoints
+@router.get("/maintenances", response_model=List[MaintenanceResponse])
+def get_maintenances(db: Session = Depends(get_db)):
+    maintenances = db.query(Maintenance).all()
+    return [
+        MaintenanceResponse(
+            id=m.id,
+            car_id=m.car_id,
+            description=m.description,
+            date=str(m.date),
+            cost=m.cost
+        ) for m in maintenances
+    ]
+
+@router.post("/maintenances", response_model=MaintenanceResponse)
+def create_maintenance(maintenance: MaintenanceCreate, db: Session = Depends(get_db)):
+    car = db.query(Car).filter(Car.id == maintenance.car_id).first()
+    if not car:
+        raise HTTPException(status_code=400, detail="Car not found")
+    db_maintenance = Maintenance(
+        car_id=maintenance.car_id,
+        description=maintenance.description,
+        date=date.fromisoformat(maintenance.date),
+        cost=maintenance.cost
+    )
+    db.add(db_maintenance)
+    db.commit()
+    db.refresh(db_maintenance)
+    return MaintenanceResponse(
+        id=db_maintenance.id,
+        car_id=db_maintenance.car_id,
+        description=db_maintenance.description,
+        date=str(db_maintenance.date),
+        cost=db_maintenance.cost
+    )
+
+@router.put("/maintenances/{maintenance_id}", response_model=MaintenanceResponse)
+def update_maintenance(maintenance_id: int, maintenance: MaintenanceCreate, db: Session = Depends(get_db)):
+    db_maintenance = db.query(Maintenance).filter(Maintenance.id == maintenance_id).first()
+    if not db_maintenance:
+        raise HTTPException(status_code=404, detail="Maintenance not found")
+    car = db.query(Car).filter(Car.id == maintenance.car_id).first()
+    if not car:
+        raise HTTPException(status_code=400, detail="Car not found")
+    db_maintenance.car_id = maintenance.car_id
+    db_maintenance.description = maintenance.description
+    db_maintenance.date = date.fromisoformat(maintenance.date)
+    db_maintenance.cost = maintenance.cost
+    db.commit()
+    db.refresh(db_maintenance)
+    return MaintenanceResponse(
+        id=db_maintenance.id,
+        car_id=db_maintenance.car_id,
+        description=db_maintenance.description,
+        date=str(db_maintenance.date),
+        cost=db_maintenance.cost
+    )
+
+@router.delete("/maintenances/{maintenance_id}")
+def delete_maintenance(maintenance_id: int, db: Session = Depends(get_db)):
+    db_maintenance = db.query(Maintenance).filter(Maintenance.id == maintenance_id).first()
+    if not db_maintenance:
+        raise HTTPException(status_code=404, detail="Maintenance not found")
+    db.delete(db_maintenance)
+    db.commit()
+    return {"message": "Maintenance deleted"}
+
+# Client Endpoints
+@router.get("/clients", response_model=List[ClientResponse])
+def get_clients(db: Session = Depends(get_db)):
+    clients = db.query(Client).all()
+    return [
+        ClientResponse(
+            id=c.id,
+            full_name=c.full_name,
+            phone=c.phone,
+            license_number=c.license_number,
+            birth_date=str(c.birth_date) if c.birth_date else None
+        ) for c in clients
+    ]
+
+@router.post("/clients", response_model=ClientResponse)
+def create_client(client: ClientCreate, db: Session = Depends(get_db)):
+    existing = db.query(Client).filter(Client.license_number == client.license_number).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Client with this license number already exists")
+    db_client = Client(
+        full_name=client.full_name,
+        phone=client.phone,
+        license_number=client.license_number,
+        birth_date=date.fromisoformat(client.birth_date)
+    )
+    db.add(db_client)
+    db.commit()
+    db.refresh(db_client)
+    return ClientResponse(
+        id=db_client.id,
+        full_name=db_client.full_name,
+        phone=db_client.phone,
+        license_number=db_client.license_number,
+        birth_date=str(db_client.birth_date) if db_client.birth_date else None
+    )
+
+@router.put("/clients/{client_id}", response_model=ClientResponse)
+def update_client(client_id: int, client: ClientCreate, db: Session = Depends(get_db)):
+    db_client = db.query(Client).filter(Client.id == client_id).first()
+    if not db_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    existing = db.query(Client).filter(Client.license_number == client.license_number).first()
+    if existing and existing.id != client_id:
+        raise HTTPException(status_code=400, detail="License number already exists")
+    db_client.full_name = client.full_name
+    db_client.phone = client.phone
+    db_client.license_number = client.license_number
+    db_client.birth_date = date.fromisoformat(client.birth_date)
+    db.commit()
+    db.refresh(db_client)
+    return ClientResponse(
+        id=db_client.id,
+        full_name=db_client.full_name,
+        phone=db_client.phone,
+        license_number=db_client.license_number,
+        birth_date=str(db_client.birth_date) if db_client.birth_date else None
+    )
+
+@router.delete("/clients/{client_id}")
+def delete_client(client_id: int, db: Session = Depends(get_db)):
+    db_client = db.query(Client).filter(Client.id == client_id).first()
+    if not db_client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    db.delete(db_client)
+    db.commit()
+    return {"message": "Client deleted"}
+
+# Car Endpoints
+@router.get("/cars", response_model=List[CarResponse])
+def get_cars(db: Session = Depends(get_db)):
+    return db.query(Car).all()
+
+@router.post("/cars", response_model=CarResponse)
+def create_car(car: CarCreate, db: Session = Depends(get_db)):
+    existing = db.query(Car).filter(Car.plate == car.plate).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Car with this plate already exists")
+    db_car = Car(**car.dict())
+    db.add(db_car)
+    db.commit()
+    db.refresh(db_car)
+    return db_car
+
+@router.put("/cars/{car_id}", response_model=CarResponse)
+def update_car(car_id: int, car: CarUpdate, db: Session = Depends(get_db)):
+    db_car = db.query(Car).filter(Car.id == car_id).first()
+    if not db_car:
+        raise HTTPException(status_code=404, detail="Car not found")
+    existing = db.query(Car).filter(Car.plate == car.plate).first()
+    if existing and existing.id != car_id:
+        raise HTTPException(status_code=400, detail="Plate already exists")
+    db_car.color = car.color
+    db_car.plate = car.plate
+    db_car.price = car.price
+    db.commit()
+    db.refresh(db_car)
+    return db_car
+
+@router.delete("/cars/{car_id}")
+def delete_car(car_id: int, db: Session = Depends(get_db)):
+    db_car = db.query(Car).filter(Car.id == car_id).first()
+    if not db_car:
+        raise HTTPException(status_code=404, detail="Car not found")
+    db.delete(db_car)
+    db.commit()
+    return {"message": "Car deleted"}
+
+# Contract Endpoints
+@router.get("/contracts", response_model=List[ContractResponse])
+def get_contracts(db: Session = Depends(get_db)):
+    contracts = db.query(Contract).options(joinedload(Contract.client), joinedload(Contract.car)).all()
+    return contracts  # Pydantic обработает nested и даты
+
+@router.post("/contracts", response_model=ContractResponse)
+def create_contract(contract: ContractCreate, db: Session = Depends(get_db)):
+    client = db.query(Client).filter(Client.id == contract.client_id).first()
+    if not client:
+        raise HTTPException(status_code=400, detail="Client not found")
+    car = db.query(Car).filter(Car.id == contract.car_id).first()
+    if not car:
+        raise HTTPException(status_code=400, detail="Car not found")
+    # Проверяем, не арендована ли машина уже (упрощённо, без учёта дат)
+    existing_contract = db.query(Contract).filter(Contract.car_id == contract.car_id, Contract.status == "active").first()
+    if existing_contract:
+        raise HTTPException(status_code=400, detail="Car is already rented")
+    db_contract = Contract(
+        client_id=contract.client_id,
+        car_id=contract.car_id,
+        start_date=date.fromisoformat(contract.start_date),
+        end_date=date.fromisoformat(contract.end_date),
+        payment_date=date.fromisoformat(contract.payment_date),
+        amount=contract.amount
+    )
+    db.add(db_contract)
+    db.commit()
+    db.refresh(db_contract)
+    db_contract = db.query(Contract).options(joinedload(Contract.client), joinedload(Contract.car)).filter(Contract.id == db_contract.id).first()
+    return db_contract  # Для nested
+
+@router.put("/contracts/{contract_id}", response_model=ContractResponse)
+def update_contract(contract_id: int, contract: ContractCreate, db: Session = Depends(get_db)):
+    db_contract = db.query(Contract).filter(Contract.id == contract_id).first()
+    if not db_contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    client = db.query(Client).filter(Client.id == contract.client_id).first()
+    if not client:
+        raise HTTPException(status_code=400, detail="Client not found")
+    car = db.query(Car).filter(Car.id == contract.car_id).first()
+    if not car:
+        raise HTTPException(status_code=400, detail="Car not found")
+    db_contract.client_id = contract.client_id
+    db_contract.car_id = contract.car_id
+    db_contract.start_date = date.fromisoformat(contract.start_date)
+    db_contract.end_date = date.fromisoformat(contract.end_date)
+    db_contract.payment_date = date.fromisoformat(contract.payment_date)
+    db_contract.amount = contract.amount
+    db.commit()
+    db.refresh(db_contract)
+    db_contract = db.query(Contract).options(joinedload(Contract.client), joinedload(Contract.car)).filter(Contract.id == db_contract.id).first()
+    return db_contract
+
+@router.delete("/contracts/{contract_id}")
+def delete_contract(contract_id: int, db: Session = Depends(get_db)):
+    db_contract = db.query(Contract).filter(Contract.id == contract_id).first()
+    if not db_contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+    db.delete(db_contract)
+    db.commit()
+    return {"message": "Contract deleted"}
