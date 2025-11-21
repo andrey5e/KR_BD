@@ -443,3 +443,61 @@
                 alert('Не удалось оформить договор. Проверьте сервер.');
             }
         });
+
+        function formatPhone(value) {
+            if (!value.startsWith('+7')) {
+                value = '+7' + value.replace(/\D/g, '');
+            }
+
+            const afterPlus7 = value.substring(2).replace(/\D/g, '');
+            const digits = afterPlus7.slice(0, 10);
+            let formatted = '+7';
+            if (digits.length >= 1) formatted += ' (' + digits.slice(0, 3);
+            if (digits.length >= 4) formatted += ') ' + digits.slice(3, 6);
+            if (digits.length >= 7) formatted += '-' + digits.slice(6, 8);
+            if (digits.length >= 9) formatted += '-' + digits.slice(8, 10);
+            return formatted;
+        }
+
+        function formatLicense(value) {
+            const digits = value.replace(/\D/g, '');
+            const limitedDigits = digits.slice(0, 10);
+            let formatted = '';
+            if (limitedDigits.length > 0) formatted += limitedDigits.slice(0, 2);
+            if (limitedDigits.length > 2) formatted += ' ' + limitedDigits.slice(2, 4);
+            if (limitedDigits.length > 4) formatted += ' ' + limitedDigits.slice(4, 10);
+            return formatted;
+        }
+
+        function formatAmount(value) {
+            const digits = value.replace(/\D/g, '');
+            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('phone').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatPhone(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+
+            document.getElementById('license').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatLicense(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+
+            document.getElementById('amount').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatAmount(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+        });
+
+        loadClients();
+    </script>
+</body>
+</html>
