@@ -121,3 +121,65 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Схемы для всех сущностей
+class BrandCreate(BaseModel):
+    name: str
+
+class BrandResponse(BaseModel):
+    id: int
+    name: str
+
+class ModelCreate(BaseModel):
+    name: str
+
+class ModelResponse(BaseModel):
+    id: int
+    name: str
+
+class ParkingCreate(BaseModel):
+    name: str
+
+class ParkingResponse(BaseModel):
+    id: int
+    name: str
+
+class EmployeeCreate(BaseModel):
+    full_name: str
+
+class EmployeeResponse(BaseModel):
+    id: int
+    full_name: str
+
+class PaymentCreate(BaseModel):
+    contract_id: int
+    date: str
+    amount: float
+
+class PaymentResponse(BaseModel):
+    id: int
+    contract_id: int
+    date: str
+    amount: float
+
+class InsuranceCreate(BaseModel):
+    contract_id: int
+    cost: float
+
+class InsuranceResponse(BaseModel):
+    id: int
+    contract_id: int
+    cost: float
+
+class MaintenanceCreate(BaseModel):
+    car_id: int
+    description: str
+    date: str
+    cost: float
+
+class MaintenanceResponse(BaseModel):
+    id: int
+    car_id: int
+    description: str
+    date: str
+    cost: float
