@@ -169,3 +169,77 @@
         <button id="login-btn">Войти</button>
         <div id="error-msg"></div>
     </div>
+    <nav id="nav">
+        <a href="autopark.html">Автопарк</a>
+        <a href="select.html">Выбрать авто</a>
+        <a href="management.html">Управление</a>
+    </nav>
+
+    <div id="welcome-msg">Добро пожаловать, Андрей Евгеньевич!</div>
+    
+    <script nonce="06052005">
+        const validEmployee = {
+            fullName: "Алексеенко Андрей Евгеньевич",
+            password: "06052005"
+        };
+        
+        function applyTheme(theme) {
+            const body = document.body;
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (theme === 'dark') {
+                body.classList.add('dark');
+                toggleBtn.textContent = '🌙';
+            } else {
+                body.classList.remove('dark');
+                toggleBtn.textContent = '☀️';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        const loginForm = document.getElementById('login-form');
+        const formHeight = loginForm.scrollHeight;
+        loginForm.style.maxHeight = formHeight + 'px';
+
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const fullName = document.getElementById('full-name').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('error-msg');
+            
+            if (fullName === validEmployee.fullName && password === validEmployee.password) {
+                loginForm.style.opacity = '0';
+                loginForm.style.maxHeight = '0';
+                loginForm.style.padding = '0';
+                loginForm.style.margin = '0';
+                errorMsg.textContent = '';
+
+                setTimeout(() => {
+                    document.getElementById('nav').style.opacity = '1';
+                    document.getElementById('nav').style.visibility = 'visible';
+                    document.getElementById('welcome-msg').style.opacity = '1';
+
+                    setTimeout(() => {
+                        loginForm.style.display = 'none';
+                    }, 100);
+                }, 250);
+            } else {
+                errorMsg.textContent = 'Неверный логин или пароль!';
+            }
+        });
+
+        document.querySelectorAll('nav a').forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
