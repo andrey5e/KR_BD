@@ -368,3 +368,225 @@
             Volkswagen: ['Arteon', 'Golf', 'Jetta', 'Passat', 'Tiguan', 'Touareg', 'Transporter'],
             Volvo: ['S60', 'S70', 'V60', 'V70', 'V90', 'XC70', 'XC90']
         };
+
+        const years = [];
+        for (let y = 2025; y >= 2000; y--) {
+            years.push(y);
+        }
+
+        async function loadCars() {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+            try {
+                const response = await fetch(`${apiUrl}/cars`);
+                const cars = await response.json();
+                const carList = document.getElementById('car');
+                carList.innerHTML = '';
+                cars.forEach(car => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="car-info">${car.brand} ${car.model} (${car.year}) Цвет - ${car.color}, Гос. номер - ${formatAndValidatePlate(car.license_plate)}, Цена - ${formatPrice(car.price.toString())} ₽/сутки</span>
+                        <button data-id="${car.id}" data-action="edit">Редактировать</button>
+                        <button data-id="${car.id}" data-action="delete">Удалить</button>
+                    `;
+                    carList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки автомобилей:', error);
+                errorMsg.textContent = 'Не удалось загрузить список автомобилей. Проверьте подключение к серверу.';
+                errorMsg.style.display = 'block';
+                alert('Не удалось загрузить список автомобилей. Проверьте подключение к серверу.');
+            }
+        }
+
+        async function deleteCar(carId) {
+            if (!confirm('Вы уверены, что хотите удалить этот автомобиль?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`${apiUrl}/cars/${carId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    loadCars();
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Не удалось удалить автомобиль. Проверьте подключение к серверу или ID машины.');
+                }
+            } catch (error) {
+                console.error('Ошибка удаления:', error);
+                alert('Не удалось удалить автомобиль. Проверьте подключение к серверу.');
+            }
+        }
+
+        function formatPrice(value) {
+            const cleaned = value.replace(/[^\d]/g, '');
+            return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        document.getElementById('brand').addEventListener('change', function() {
+            const brand = this.value;
+            const modelSelect = document.getElementById('model');
+            const yearSelect = document.getElementById('year');
+            const colorSelect = document.getElementById('color');
+            const plateInput = document.getElementById('plate');
+            const priceInput = document.getElementById('price');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (brand) {
+                modelSelect.disabled = false;
+                modelSelect.innerHTML = '<option value="">Модель</option>';
+                modelsByBrand[brand].forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+            } else {
+                modelSelect.disabled = true;
+                yearSelect.disabled = true;
+                colorSelect.disabled = true;
+                plateInput.disabled = true;
+                priceInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+            checkForm();
+        });
+
+        document.getElementById('model').addEventListener('change', function() {
+            const model = this.value;
+            const yearSelect = document.getElementById('year');
+            const colorSelect = document.getElementById('color');
+            const plateInput = document.getElementById('plate');
+            const priceInput = document.getElementById('price');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (model) {
+                yearSelect.disabled = false;
+                yearSelect.innerHTML = '<option value="">Год производства</option>';
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    yearSelect.appendChild(option);
+                });
+            } else {
+                yearSelect.disabled = true;
+                colorSelect.disabled = true;
+                plateInput.disabled = true;
+                priceInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+            checkForm();
+        });
+
+        document.getElementById('year').addEventListener('change', function() {
+            const year = this.value;
+            const colorSelect = document.getElementById('color');
+            const plateInput = document.getElementById('plate');
+            const priceInput = document.getElementById('price');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (year) {
+                colorSelect.disabled = false;
+            } else {
+                colorSelect.disabled = true;
+                plateInput.disabled = true;
+                priceInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+            checkForm();
+        });
+
+        document.getElementById('color').addEventListener('change', function() {
+            const color = this.value;
+            const plateInput = document.getElementById('plate');
+            const priceInput = document.getElementById('price');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (color) {
+                plateInput.disabled = false;
+            } else {
+                plateInput.disabled = true;
+                priceInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+            checkForm();
+        });
+
+        function validatePlate(plate) {
+            const cleaned = plate.replace(/\s/g, '');
+            return /^[АВЕКМНОРСТУХABEKMHOPCTYX]{1}\d{3}[АВЕКМНОРСТУХABEKMHOPCTYX]{2}\d{2}$/.test(cleaned);
+        }
+
+        function formatAndValidatePlate(value) {
+            const cleaned = value.replace(/\s/g, '').toUpperCase();
+            let filtered = '';
+            for (let i = 0; i < cleaned.length && i < 8; i++) {
+                const char = cleaned[i];
+                if (i === 0 && /^[АВЕКМНОРСТУХABEKMHOPCTYX]$/.test(char)) {
+                    filtered += char;
+                } else if (i >= 1 && i <= 3 && /\d/.test(char)) {
+                    filtered += char;
+                } else if (i >= 4 && i <= 5 && /^[АВЕКМНОРСТУХABEKMHOPCTYX]$/.test(char)) {
+                    filtered += char;
+                } else if (i >= 6 && i <= 7 && /\d/.test(char)) {
+                    filtered += char;
+                }
+            }
+            let formatted = '';
+            if (filtered.length > 0) formatted += filtered[0];
+            if (filtered.length > 1) formatted += ' ' + filtered.substring(1, 4);
+            if (filtered.length > 4) formatted += ' ' + filtered.substring(4, 6);
+            if (filtered.length > 6) formatted += ' ' + filtered.substring(6, 8);
+            return formatted.trim();
+        }
+
+        document.getElementById('plate').addEventListener('input', function(e) {
+            const input = e.target;
+            const value = input.value;
+            const formatted = formatAndValidatePlate(value);
+            input.value = formatted;
+            const cleaned = formatted.replace(/\s/g, '');
+            const priceInput = document.getElementById('price');
+            const submitBtn = document.getElementById('submitBtn');
+            if (validatePlate(cleaned)) {
+                priceInput.disabled = false;
+            } else {
+                priceInput.disabled = true;
+                submitBtn.disabled = true;
+            }
+            checkForm();
+        });
+
+        document.getElementById('plate').addEventListener('keydown', function(e) {
+            const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+            const allowedChars = /^[АВЕКМНОРСТУХABEKMHOPCTYX\d]$/i;
+            if (!allowedKeys.includes(e.key) && !allowedChars.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        document.getElementById('price').addEventListener('input', function(e) {
+            const input = e.target;
+            const value = input.value;
+            const formatted = formatPrice(value);
+            input.value = formatted;
+            checkForm();
+        });
+
+        document.getElementById('increasePrice').addEventListener('click', function() {
+            const input = document.getElementById('price');
+            let val = parseInt(input.value.replace(/\s/g, '')) || 0;
+            val += 250;
+            input.value = formatPrice(val.toString());
+            checkForm();
+        });
+
+        document.getElementById('decreasePrice').addEventListener('click', function() {
+            const input = document.getElementById('price');
+            let val = parseInt(input.value.replace(/\s/g, '')) || 0;
+            val = Math.max(0, val - 250);
+            input.value = formatPrice(val.toString());
+            checkForm();
+        });
