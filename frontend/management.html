@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Drive/Управление</title>
+    <style nonce="abc123">
+        :root {
+            --bg-color: #fefff5;
+            --text-color: #000;
+            --nav-bg: #ccc;
+            --nav-hover: #a50000;
+            --li-bg: #f9f9f9;
+            --modal-bg: #fefefe;
+            --shadow: rgba(0,0,0,0.1);
+        }
+        
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 35px; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body.dark {
+            --bg-color: #333;
+            --text-color: #fff;
+            --nav-bg: #555;
+            --nav-hover: #a50000;
+            --li-bg: #444;
+            --modal-bg: #444;
+            --shadow: rgba(255,255,255,0.1);
+        }
+        
+        nav { margin-bottom: 20px; text-align: center; }
+        nav a { text-decoration: none; padding: 10px; background: var(--nav-bg); color: var(--text-color); margin: 5px; border-radius: 5px; transition: background 0.3s; }
+        nav a.active { background: var(--nav-hover); color: white; }
+        nav a:hover { background: var(--nav-hover); }
+        .tabs { display: flex; margin-top: 20px; margin-bottom: 0px; }
+        .tab { text-decoration: none; padding: 10px; background: var(--nav-bg); color: var(--text-color); margin: 5px; display: inline-block; border-radius: 5px 5px 0 0; cursor: pointer; transition: background 0.3s; }
+        .tab.active { background: var(--nav-hover); color: white; }
+        .tab:hover { background: var(--nav-hover); }
+        .tab-content { display: none; padding: 10px; background: var(--li-bg); border-radius: 5px; box-shadow: 0 2px 4px var(--shadow); }
+        .tab-content.active { display: block; }
+        h2, h3 { font-size: 1.5em; color: var(--text-color);}
+        h2.centered { text-align: center; }
+
+        button { padding: 10px 15px; background: var(--nav-hover); color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; transition: background 0.3s; }
+        button:hover { background: #a4a4a4; color: #333; }
+        button.danger { background: #a50000; }
+        button.danger:hover { background: #a50000; }
+        ul { list-style: none; padding: 0; }
+        li { background: var(--li-bg); margin: 10px 0; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px var(--shadow); display: flex; justify-content: space-between; align-items: center; }
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); }
+        .modal-content { background-color: var(--modal-bg); margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; color: var(--text-color); }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        form { display: flex; flex-direction: column; }
+        input, select { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: var(--li-bg); color: var(--text-color); }
+        input:focus, select:focus { border-color: #007bff; outline: none; }
+        .contract-details { font-size: 0.9em; color: #665; }
+        
+        #theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--nav-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 10px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px var(--shadow);
+            z-index: 10;
+        }
+        #theme-toggle:hover {
+            background: var(--nav-hover);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle">☀️</button>
+    
+    <nav>
+        <a href="autopark.html">Автопарк</a>
+        <a href="select.html">Выбрать авто</a>
+        <a href="management.html" class="active">Управление</a>
+        <a href="main.html">Выход</a>
+    </nav>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="clients">Клиенты</div>
+        <div class="tab" data-tab="contracts">Договоры</div>
+    </div>
+
+    <div id="clients" class="tab-content active">
+        <h2 class="centered">Управление клиентами</h2>
+        <button id="addClientBtn">Добавить клиента</button>
+        <h3>Список клиентов</h3>
+        <ul id="clientList"></ul>
+    </div>
+
+    <div id="contracts" class="tab-content">
+        <h2 class="centered">Управление договорами</h2>
+        <button id="addContractBtn">Оформить договор</button>
+        <h3>Действующие договоры</h3>
+        <ul id="activeContracts"></ul>
+        <h3>Завершённые договоры</h3>
+        <ul id="completedContracts"></ul>
+    </div>
+
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeClientModal">&times;</span>
+            <h2 id="clientModalTitle">Добавить клиента</h2>
+            <form id="clientForm">
+                <input type="hidden" id="clientId">
+                <label for="fullName">ФИО:</label>
+                <input type="text" id="fullName" required>
+                <label for="phone">Телефон:</label>
+                <input type="tel" id="phone" required>
+                <label for="license">Номер ВУ:</label>
+                <input type="text" id="license" required>
+                <label for="birthDate">Дата рождения:</label>
+                <input type="date" id="birthDate" required max="2005-12-31">
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="contractModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeContractModal">&times;</span>
+            <h2>Оформить договор</h2>
+            <form id="contractForm">
+                <label for="clientSelect">Клиент (ФИО):</label>
+                <select id="clientSelect" required></select>
+                <label for="carSelect">Авто (Гос номер):</label>
+                <select id="carSelect" required></select>
+                <label for="startDate">Дата начала:</label>
+                <input type="date" id="startDate" required>
+                <label for="endDate">Дата окончания:</label>
+                <input type="date" id="endDate" required>
+                <label for="paymentDate">Дата платежа:</label>
+                <input type="date" id="paymentDate" required>
+                <label for="amount">Сумма (руб.):</label>
+                <input type="text" id="amount" pattern="[0-9\s]*" minlength="1" required placeholder="Итоговая сумма">
+                <button type="submit">Оформить</button>
+            </form>
+        </div>
+    </div>
+    
+    <script nonce="abc123">
+        const apiUrl = 'http://127.0.0.1:8000';
+
+        function applyTheme(theme) {
+            const body = document.body;
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (theme === 'dark') {
+                body.classList.add('dark');
+                toggleBtn.textContent = '🌙';
+            } else {
+                body.classList.remove('dark');
+                toggleBtn.textContent = '☀️';
+            }
+        }
