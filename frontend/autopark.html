@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Drive/Автопарк</title>
+    <style nonce="abc123">
+        :root {
+            --bg-color: #fefff5;
+            --text-color: #000;
+            --nav-bg: #ccc;
+            --nav-hover: #a50000;
+            --li-bg: #ffffff;
+            --shadow: rgba(0,0,0,0.3);
+        }
+        
+        body { 
+            font-family: Arial; 
+            margin: 20px; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body.dark {
+            --bg-color: #333;
+            --text-color: #fff;
+            --nav-bg: #555;
+            --nav-hover: #a50000;
+            --li-bg: #444;
+            --shadow: rgba(255,255,255,0.1);
+        }
+        
+        #car { 
+            list-style: none; 
+            padding: 0; 
+        }
+        #car li { 
+            background: var(--li-bg); 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-radius: 5px; 
+            font-family: Arial; 
+            box-shadow: 0 2px 4px var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #car li .car-info {
+            flex-grow: 1;
+        }
+        #car li button {
+            background: var(--nav-hover);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-left: 5px;
+        }
+        #car li button:hover {
+            background: #800000;
+        }
+        nav { 
+            margin-bottom: 10px; 
+            text-align: center; 
+            position: relative;
+        }
+        nav a { 
+            text-decoration: none; 
+            padding: 10px; 
+            background: var(--nav-bg); 
+            color: var(--text-color); 
+            margin: 5px; 
+            display: inline-block; 
+            border-radius: 5px; 
+            transition: background 0.3s; 
+        }
+        nav a.active { 
+            background: var(--nav-hover); 
+            color: white; 
+        }
+        nav a:hover { 
+            background: var(--nav-hover); 
+        }
+        #theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--nav-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 10px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+        #theme-toggle:hover {
+            background: var(--nav-hover);
+            color: white;
+        }
+        form { 
+            margin-top: 20px; 
+        }
+        input, select, button { 
+            margin: 5px; 
+            padding: 10px; 
+            font-family: Arial; 
+        }
+        input#plate { 
+            text-transform: uppercase; 
+        }
+        input:disabled, select:disabled, button:disabled { 
+            background-color: #e0e0e0; 
+            color: #999; 
+            cursor: not-allowed; 
+        }
+        .price-container { 
+            position: relative; 
+            display: inline-block; 
+        }
+        .price-container input { 
+            padding-right: 70px; 
+        }
+        .price-container .arrows { 
+            position: absolute; 
+            right: 30px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+            pointer-events: none; 
+        }
+        .price-container .arrows span { 
+            font-size: 12px; 
+            color: #665; 
+            cursor: pointer; 
+            pointer-events: auto; 
+            user-select: none; 
+        }
+        .price-container .arrows span:hover { 
+            color: #000; 
+        }
+        .price-container span.currency { 
+            position: absolute; 
+            right: 10px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            color: #665; 
+            pointer-events: none; 
+        }
+        .price-container input:disabled + .arrows, .price-container input:disabled + span.currency { 
+            display: none; 
+        }
+        h2 { 
+            margin-top: 20px; 
+        }
+        #errorMsg { 
+            color: var(--text-color);
+            display: none; 
+            margin-bottom: 10px; 
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: var(--bg-color);
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px var(--shadow);
+        }
+        .modal-content h3 {
+            margin-top: 0;
+        }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .modal-content .buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .modal-content button {
+            flex: 1;
+            padding: 10px;
+            background: var(--nav-hover);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .modal-content button:hover {
+            background: #800000;
+        }
+        .modal-content .cancel-btn {
+            background: var(--nav-bg);
+            color: var(--text-color);
+        }
+        .modal-content .cancel-btn:hover {
+            background: var(--nav-hover);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <button id="theme-toggle">☀️</button>
+        <a href="autopark.html" class="active">Автопарк</a>
+        <a href="select.html">Выбрать авто</a>
+        <a href="management.html">Управление</a>
+        <a href="main.html">Выход</a>
+    </nav>
