@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Drive/Доступные авто</title>
+    <style nonce="abc123">
+        :root {
+            --bg-color: #fefff5;
+            --text-color: #000;
+            --nav-bg: #ccc;
+            --nav-hover: #a50000;
+            --li-bg: #ffffff;
+            --shadow: rgba(0,0,0,0.3);
+            --placeholder-color: rgba(0,0,0,0.5);
+        }
+        
+        body { 
+            font-family: Arial; 
+            margin: 20px; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body.dark {
+            --bg-color: #333;
+            --text-color: #fff;
+            --nav-bg: #555;
+            --nav-hover: #a50000;
+            --li-bg: #444;
+            --shadow: rgba(255,255,255,0.1);
+            --placeholder-color: rgba(255,255,255,0.5);
+        }
+        
+        #car { list-style: none; padding: 0; }
+        #car li { 
+            background: var(--li-bg); 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-radius: 5px; 
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+        nav { 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+        nav a { 
+            text-decoration: none; 
+            padding: 10px; 
+            background: var(--nav-bg); 
+            color: var(--text-color); 
+            margin: 5px; 
+            display: inline-block; 
+            border-radius: 5px; 
+            transition: background 0.3s; 
+        }
+        nav a.active { 
+            background: var(--nav-hover); 
+            color: white; 
+        }
+        nav a:hover { 
+            background: var(--nav-hover); 
+        }
+        #errorMsg { 
+            color: var(--text-color);
+            display: none; 
+            margin-bottom: 10px; 
+        }
+        h2 { 
+            margin-top: 20px; 
+        }
+        
+        #theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--nav-bg);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 10px;
+            border-radius: 10px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: 0 4px 8px var(--shadow);
+            z-index: 10;
+        }
+        #theme-toggle:hover {
+            background: var(--nav-hover);
+            color: white;
+        }
+        
+        #parkingSelect {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: var(--li-bg);
+            color: var(--text-color);
+            margin-right: 10px;
+        }
+        #parkingSelect option:disabled {
+            color: var(--placeholder-color);
+        }
+        #loadCarsBtn {
+            padding: 10px 15px;
+            background: var(--nav-hover);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        #loadCarsBtn:hover {
+            background: #a4a4a4;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle">☀️</button>
+    
+    <nav>
+        <a href="autopark.html">Автопарк</a>
+        <a href="select.html" class="active">Выбрать авто</a>
+        <a href="management.html">Управление</a>
+        <a href="main.html">Выход</a>
+    </nav>
+    <h2>Доступные автомобили</h2>
+    <select id="parkingSelect"></select>
+    <button id="loadCarsBtn">Показать авто</button>
+    <p id="errorMsg"></p>
+    <ul id="car"></ul>
+
+    <script nonce="abc123">
+        function applyTheme(theme) {
+            const body = document.body;
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (theme === 'dark') {
+                body.classList.add('dark');
+                toggleBtn.textContent = '🌙';
+            } else {
+                body.classList.remove('dark');
+                toggleBtn.textContent = '☀️';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        const apiUrl = 'http://127.0.0.1:8000';
+
+        function formatPrice(value) {
+            const cleaned = value.replace(/[^\d]/g, '');
+            return cleaned.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        function formatAndValidatePlate(value) {
+            const cleaned = value.replace(/\s/g, '').toUpperCase();
+            let filtered = '';
+            for (let i = 0; i < cleaned.length && i < 8; i++) {
+                const char = cleaned[i];
+                if (i === 0 && /^[АВЕКМНОРСТУХABEKMHOPCTYX]$/.test(char)) {
+                    filtered += char;
+                } else if (i >= 1 && i <= 3 && /\d/.test(char)) {
+                    filtered += char;
+                } else if (i >= 4 && i <= 5 && /^[АВЕКМНОРСТУХABEKMHOPCTYX]$/.test(char)) {
+                    filtered += char;
+                } else if (i >= 6 && i <= 7 && /\d/.test(char)) {
+                    filtered += char;
+                }
+            }
+            let formatted = '';
+            if (filtered.length > 0) formatted += filtered[0];
+            if (filtered.length > 1) formatted += ' ' + filtered.substring(1, 4);
+            if (filtered.length > 4) formatted += ' ' + filtered.substring(4, 6);
+            if (filtered.length > 6) formatted += ' ' + filtered.substring(6, 8);
+            return formatted.trim();
+        }
+
+        async function loadParkings() {
+            const select = document.getElementById('parkingSelect');
+            select.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Выберите паркинг';
+            defaultOption.disabled = true;
+            defaultOption.selected = true;
+            select.appendChild(defaultOption);
+            const option = document.createElement('option');
+            option.value = '1';
+            option.textContent = 'г. Белгород, ул. Королёва, д. 21. Тел. +7 (4722) 55-55-55';
+            select.appendChild(option);
+        }
+
+        async function loadAvailableCars(parkingId) {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.style.display = 'none';
+            try {
+                const response = await fetch(`${apiUrl}/available-cars`);
+                const cars = await response.json();
+                const carList = document.getElementById('car');
+                carList.innerHTML = '';
+                cars.forEach(car => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        ${car.brand} ${car.model} (${car.year}) Цвет - ${car.color}, Гос. номер - ${formatAndValidatePlate(car.license_plate)}, Цена - ${formatPrice(car.price.toString())} ₽/сутки
+                    `;
+                    carList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки доступных автомобилей:', error);
+                errorMsg.textContent = 'Не удалось загрузить список доступных автомобилей. Проверьте подключение к серверу.';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        document.getElementById('loadCarsBtn').addEventListener('click', () => {
+            const parkingId = document.getElementById('parkingSelect').value;
+            if (parkingId) {
+                loadAvailableCars(parkingId);
+            } else {
+                alert('Выберите паркинг!');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadParkings();
+        });
+
+        document.querySelectorAll('nav a').forEach(link => {
+            if (link.href === window.location.href) {
+                link.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
