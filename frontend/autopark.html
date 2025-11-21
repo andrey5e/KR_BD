@@ -229,3 +229,142 @@
         <a href="management.html">Управление</a>
         <a href="main.html">Выход</a>
     </nav>
+    
+    <h2>Добавить автомобиль</h2>
+    <form id="addCarForm">
+        <select id="brand" required>
+            <option value="">Марка</option>
+            <option value="Audi">Audi</option>
+            <option value="BMW">BMW</option>
+            <option value="Bugatti">Bugatti</option>
+            <option value="Chevrolet">Chevrolet</option>
+            <option value="Ford">Ford</option>
+            <option value="Honda">Honda</option>
+            <option value="Hyundai">Hyundai</option>
+            <option value="Kia">Kia</option>
+            <option value="Lamborghini">Lamborghini</option>
+            <option value="McLaren">McLaren</option>
+            <option value="Mercedes-Benz">Mercedes-Benz</option>
+            <option value="Nissan">Nissan</option>
+            <option value="Porsche">Porsche</option>
+            <option value="Toyota">Toyota</option>
+            <option value="Volkswagen">Volkswagen</option>
+        </select>
+        <select id="model" required disabled>
+            <option value="">Модель</option>
+        </select>
+        <select id="year" required disabled>
+            <option value="">Год производства</option>
+        </select>
+        <select id="color" required disabled>
+            <option value="">Цвет</option>
+            <option value="Белый">Белый</option>
+            <option value="Желтый">Желтый</option>
+            <option value="Зеленый">Зеленый</option>
+            <option value="Коричневый">Коричневый</option>
+            <option value="Красный">Красный</option>
+            <option value="Оранжевый">Оранжевый</option>
+            <option value="Розовый">Розовый</option>
+            <option value="Серый">Серый</option>
+            <option value="Серебристый">Серебристый</option>
+            <option value="Синий">Синий</option>
+            <option value="Фиолетовый">Фиолетовый</option>
+            <option value="Черный">Черный</option>
+            <option value="Золотой">Золотой</option>
+        </select>
+        <input type="text" id="plate" placeholder="А 021 АЕ 31" required disabled>
+        <div class="price-container">
+            <input type="text" id="price" placeholder="Цена за сутки" required disabled>
+            <div class="arrows">
+                <span id="increasePrice">▲</span>
+                <span id="decreasePrice">▼</span>
+            </div>
+            <span class="currency">₽</span>
+        </div>
+        <button type="submit" id="submitBtn" disabled>Добавить</button>
+    </form>
+    
+    <h2>Все автомобили</h2>
+    <p id="errorMsg"></p>
+    <ul id="car"></ul>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>Редактировать автомобиль</h3>
+            <select id="editColor" required>
+                <option value="">Цвет</option>
+                <option value="Белый">Белый</option>
+                <option value="Желтый">Желтый</option>
+                <option value="Зеленый">Зеленый</option>
+                <option value="Коричневый">Коричневый</option>
+                <option value="Красный">Красный</option>
+                <option value="Оранжевый">Оранжевый</option>
+                <option value="Розовый">Розовый</option>
+                <option value="Серый">Серый</option>
+                <option value="Серебристый">Серебристый</option>
+                <option value="Синий">Синий</option>
+                <option value="Фиолетовый">Фиолетовый</option>
+                <option value="Черный">Черный</option>
+                <option value="Золотой">Золотой</option>
+            </select>
+            <input type="text" id="editPlate" placeholder="А 021 АЕ 31" required>
+            <div class="price-container">
+                <input type="text" id="editPrice" placeholder="Цена за сутки" required>
+                <div class="arrows">
+                    <span id="editIncreasePrice">▲</span>
+                    <span id="editDecreasePrice">▼</span>
+                </div>
+                <span class="currency">₽</span>
+            </div>
+            <div class="buttons">
+                <button id="updateBtn">Обновить</button>
+                <button class="cancel-btn" id="cancelBtn">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <script nonce="abc123">
+        function applyTheme(theme) {
+            const body = document.body;
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (theme === 'dark') {
+                body.classList.add('dark');
+                toggleBtn.textContent = '🌙';
+            } else {
+                body.classList.remove('dark');
+                toggleBtn.textContent = '☀️';
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const currentTheme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        const apiUrl = 'http://127.0.0.1:8000';
+        
+        const modelsByBrand = {
+            Audi: ['S3', 'S4', 'S5', 'RS6', 'RS7', 'S8', 'RS Q3', 'Q5', 'Q7', 'RS Q8', 'R8', 'TT'],
+            BMW: ['M2', 'M3', 'M4', 'M5', 'M6', '7 Series', 'M8', 'i8', 'X5 M', 'X6 M', 'X7', 'XM'],
+            Bugatti: ['Centodieci', 'Chiron', 'Divo', 'La Voiture Noire', 'Veyron'],
+            Chevrolet: ['Camaro', 'Corvette', 'Impala', 'Niva', 'Tahoe'],
+            Ford: ['Focus', 'Mondeo', 'Mustang', 'GT', 'Explorer'],
+            Honda: ['Accord', 'Civic', 'CR-V', 'NSX', 'S2000'],
+            Hyundai: ['Creta', 'Elantra', 'Santa Fe', 'Solaris', 'Sonata'],
+            Kia: ['K5', 'K900', 'Sorento', 'Sportage', 'Stinger'],
+            Lamborghini: ['Aventador', 'Diablo', 'Gallardo', 'Huracan', 'Urus'],
+            Mazda: ['CX-3', 'CX-5', 'CX-7', 'CX-9', 'RX-8'],
+            McLaren: ['720S', '765LT', 'Artura', 'GT', 'Senna'],
+            'Mercedes-Benz': ['AMG GT', 'CLS63', 'E63', 'G63', 'GLS', 'S-Class', 'V-Class'],
+            Nissan: ['350Z', 'GT-R', 'Murano', 'Patrol', 'Qashqai'],
+            Porsche: ['911', 'Boxster', 'Cayenne', 'Macan', 'Panamera'],
+            Skoda: ['Kodiaq', 'Octavia RS', 'Rapid', 'Superb', 'Yeti'],
+            Toyota: ['Camry', 'Celica', 'Land Cruiser', 'RAV4', 'Supra'],
+            Volkswagen: ['Arteon', 'Golf', 'Jetta', 'Passat', 'Tiguan', 'Touareg', 'Transporter'],
+            Volvo: ['S60', 'S70', 'V60', 'V70', 'V90', 'XC70', 'XC90']
+        };
