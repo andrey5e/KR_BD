@@ -662,4 +662,199 @@
             }
         }
 
+        function openInsuranceModal(id = null) {
+            document.getElementById('insuranceModal').style.display = 'block';
+            document.getElementById('insuranceModalTitle').textContent = 'Добавить страховку';
+            document.getElementById('insuranceForm').reset();
+            document.getElementById('insuranceCost').value = '';
+        }
+        
+        document.getElementById('closeInsuranceModal').addEventListener('click', () => closeInsuranceModal());
+        
+        function closeInsuranceModal() {
+            document.getElementById('insuranceModal').style.display = 'none';
+        }
+        
+        document.getElementById('insuranceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                contract_id: document.getElementById('contractSelect').value,
+                cost: parseFloat(document.getElementById('insuranceCost').value.replace(/\s/g, ''))
+            };
+            try {
+                const response = await fetch(`${apiUrl}/insurances`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (response.ok) {
+                    closeInsuranceModal();
+                    loadInsurances();
+                } else {
+                    alert('Ошибка сохранения страховки: ' + response.status);
+                }
+            } catch (err) {
+                console.error('Ошибка сохранения:', err);
+                alert('Не удалось сохранить страховку. Проверьте сервер.');
+            }
+        });
+        
+        async function deleteInsurance(id) {
+            if (confirm('Вы уверены, что хотите удалить эту страховку?')) {
+                try {
+                    await fetch(`${apiUrl}/insurances/${id}`, { method: 'DELETE' });
+                    loadInsurances();
+                } catch (err) {
+                    console.error('Ошибка удаления:', err);
+                    alert('Не удалось удалить страховку.');
+                }
+            }
+        }
+
+        async function loadCarsForSelectMaintenance() {
+            try {
+                const response = await fetch(`${apiUrl}/cars`);
+                const cars = await response.json();
+                const select = document.getElementById('carSelectMaintenance');
+                select.innerHTML = '<option value="">Выберите автомобиль</option>';
+                cars.forEach(car => {
+                    const option = document.createElement('option');
+                    option.value = car.id;
+                    option.textContent = `${car.brand} ${car.model} (${car.license_plate})`;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки автомобилей для обслуживания:', err);
+                alert('Не удалось загрузить автомобили для обслуживания.');
+            }
+        }
+
+        async function loadMaintenances() {
+            try {
+                const response = await fetch(`${apiUrl}/maintenances`);
+                const maintenances = await response.json();
+                const list = document.getElementById('maintenanceList');
+                list.innerHTML = '';
+                maintenances.forEach(maintenance => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div>
+                            <strong>Обслуживание #${maintenance.id}</strong><br>
+                            Авто: ${maintenance.car.brand} ${maintenance.car.model} (${maintenance.car.license_plate})<br>
+                            Описание: ${maintenance.description}<br>
+                            Дата: ${maintenance.date}<br>
+                            Стоимость: ${maintenance.cost} руб.
+                        </div>
+                        <div>
+                            <button class="deleteMaintenanceBtn danger" data-id="${maintenance.id}">Удалить</button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+                document.querySelectorAll('.deleteMaintenanceBtn').forEach(btn => {
+                    btn.addEventListener('click', () => deleteMaintenance(btn.getAttribute('data-id')));
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки обслуживаний:', err);
+                alert('Не удалось загрузить обслуживания. Проверьте сервер.');
+            }
+        }
+
+        function openMaintenanceModal(id = null) {
+            document.getElementById('maintenanceModal').style.display = 'block';
+            document.getElementById('maintenanceModalTitle').textContent = 'Добавить запись';
+            document.getElementById('maintenanceForm').reset();
+        }
+        
+        document.getElementById('closeMaintenanceModal').addEventListener('click', () => closeMaintenanceModal());
+        
+        function closeMaintenanceModal() {
+            document.getElementById('maintenanceModal').style.display = 'none';
+        }
+        
+        document.getElementById('maintenanceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                car_id: document.getElementById('carSelectMaintenance').value,
+                description: document.getElementById('maintenanceDescription').value,
+                date: document.getElementById('maintenanceDate').value,
+                cost: parseFloat(document.getElementById('maintenanceCost').value)
+            };
+            try {
+                const response = await fetch(`${apiUrl}/maintenances`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (response.ok) {
+                    closeMaintenanceModal();
+                    loadMaintenances();
+                } else {
+                    alert('Ошибка сохранения обслуживания: ' + response.status);
+                }
+            } catch (err) {
+                console.error('Ошибка сохранения:', err);
+                alert('Не удалось сохранить обслуживание. Проверьте сервер.');
+            }
+        });
+        
+        async function deleteMaintenance(id) {
+            if (confirm('Вы уверены, что хотите удалить это обслуживание?')) {
+                try {
+                    await fetch(`${apiUrl}/maintenances/${id}`, { method: 'DELETE' });
+                    loadMaintenances();
+                } catch (err) {
+                    console.error('Ошибка удаления:', err);
+                    alert('Не удалось удалить обслуживание.');
+                }
+            }
+        }
+
+        document.getElementById('addInsuranceBtn').addEventListener('click', () => openInsuranceModal());
+        document.getElementById('addMaintenanceBtn').addEventListener('click', () => openMaintenanceModal());
+
+        function formatPhone(value) {
+            if (!value.startsWith('+7')) {
+                value = '+7' + value.replace(/\D/g, '');
+            }
+
+            const afterPlus7 = value.substring(2).replace(/\D/g, '');
+            const digits = afterPlus7.slice(0, 10);
+            let formatted = '+7';
+            if (digits.length >= 1) formatted += ' (' + digits.slice(0, 3);
+            if (digits.length >= 4) formatted += ') ' + digits.slice(3, 6);
+            if (digits.length >= 7) formatted += '-' + digits.slice(6, 8);
+            if (digits.length >= 9) formatted += '-' + digits.slice(8, 10);
+            return formatted;
+        }
+
+        function formatLicense(value) {
+            const digits = value.replace(/\D/g, '');
+            const limitedDigits = digits.slice(0, 10);
+            let formatted = '';
+            if (limitedDigits.length > 0) formatted += limitedDigits.slice(0, 2);
+            if (limitedDigits.length > 2) formatted += ' ' + limitedDigits.slice(2, 4);
+            if (limitedDigits.length > 4) formatted += ' ' + limitedDigits.slice(4, 10);
+            return formatted;
+        }
+
+        function formatAmount(value) {
+            const digits = value.replace(/\D/g, '');
+            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('phone').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatPhone(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+
+            document.getElementById('license').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatLicense(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+
+            document.getElementById('amount').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatAmount(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+
 
