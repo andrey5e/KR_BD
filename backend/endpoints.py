@@ -323,3 +323,289 @@ def setup_insurance_endpoints(app):
         db.delete(db_insurance)
         db.commit()
         return {"message": "Insurance deleted"}
+# Эндпоинты для обслуживания автомобилей
+def setup_maintenance_endpoints(app):
+    @app.get("/maintenances", response_model=List[MaintenanceResponse])
+    def get_maintenances(db: Session = Depends(get_db)):
+        maintenances = db.query(Maintenance).options(joinedload(Maintenance.car)).all()
+        return [
+            MaintenanceResponse(
+                id=m.id,
+                car=CarResponse(
+                    id=m.car.id,
+                    brand=m.car.brand,
+                    model=m.car.model,
+                    year=m.car.year,
+                    color=m.car.color,
+                    license_plate=m.car.plate,
+                    price=m.car.price
+                ),
+                description=m.description,
+                date=str(m.date),
+                cost=m.cost
+            ) for m in maintenances
+        ]
+
+    @app.post("/maintenances", response_model=MaintenanceResponse)
+    def create_maintenance(maintenance: MaintenanceCreate, db: Session = Depends(get_db)):
+        car = db.query(Car).filter(Car.id == maintenance.car_id).first()
+        if not car:
+            raise HTTPException(status_code=404, detail="Car not found")
+        db_maintenance = Maintenance(**maintenance.dict())
+        db_maintenance.date = date.fromisoformat(maintenance.date)
+        db.add(db_maintenance)
+        db.commit()
+        db.refresh(db_maintenance)
+        # Возвращаем полный объект
+        full_maintenance = db.query(Maintenance).options(joinedload(Maintenance.car)).filter(Maintenance.id == db_maintenance.id).first()
+        return MaintenanceResponse(
+            id=full_maintenance.id,
+            car=CarResponse(
+                id=full_maintenance.car.id,
+                brand=full_maintenance.car.brand,
+                model=full_maintenance.car.model,
+                year=full_maintenance.car.year,
+                color=full_maintenance.car.color,
+                license_plate=full_maintenance.car.plate,
+                price=full_maintenance.car.price
+            ),
+            description=full_maintenance.description,
+            date=str(full_maintenance.date),
+            cost=full_maintenance.cost
+        )
+
+    @app.put("/maintenances/{maintenance_id}", response_model=MaintenanceResponse)
+    def update_maintenance(maintenance_id: int, maintenance: MaintenanceCreate, db: Session = Depends(get_db)):
+        db_maintenance = db.query(Maintenance).filter(Maintenance.id == maintenance_id).first()
+        if not db_maintenance:
+            raise HTTPException(status_code=404, detail="Maintenance not found")
+        db_maintenance.car_id = maintenance.car_id
+        db_maintenance.description = maintenance.description
+        db_maintenance.date = date.fromisoformat(maintenance.date)
+        db_maintenance.cost = maintenance.cost
+        db.commit()
+        db.refresh(db_maintenance)
+        # Возвращаем полный объект
+        full_maintenance = db.query(Maintenance).options(joinedload(Maintenance.car)).filter(Maintenance.id == db_maintenance.id).first()
+        return MaintenanceResponse(
+            id=full_maintenance.id,
+            car=CarResponse(
+                id=full_maintenance.car.id,
+                brand=full_maintenance.car.brand,
+                model=full_maintenance.car.model,
+                year=full_maintenance.car.year,
+                color=full_maintenance.car.color,
+                license_plate=full_maintenance.car.plate,
+                price=full_maintenance.car.price
+            ),
+            description=full_maintenance.description,
+            date=str(full_maintenance.date),
+            cost=full_maintenance.cost
+        )
+
+    @app.delete("/maintenances/{maintenance_id}")
+    def delete_maintenance(maintenance_id: int, db: Session = Depends(get_db)):
+        db_maintenance = db.query(Maintenance).filter(Maintenance.id == maintenance_id).first()
+        if not db_maintenance:
+            raise HTTPException(status_code=404, detail="Maintenance not found")
+        db.delete(db_maintenance)
+        db.commit()
+        return {"message": "Maintenance deleted"}
+
+# Эндпоинты для клиентов
+def setup_client_endpoints(app):
+    @app.get("/clients", response_model=List[ClientResponse])
+    def get_clients(db: Session = Depends(get_db)):
+        clients = db.query(Client).all()
+        return [
+            ClientResponse(
+                id=c.id,
+                full_name=c.full_name,
+                phone=c.phone,
+                license_number=c.license_number,
+                birth_date=str(c.birth_date) if c.birth_date else None
+            ) for c in clients
+        ]
+
+    @app.post("/clients", response_model=ClientResponse)
+    def create_client(client: ClientCreate, db: Session = Depends(get_db)):
+        existing = db.query(Client).filter(Client.license_number == client.license_number).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Client with this license number already exists")
+        db_client = Client(**client.dict())
+        db_client.birth_date = date.fromisoformat(client.birth_date)
+        db.add(db_client)
+        db.commit()
+        db.refresh(db_client)
+        return ClientResponse(
+            id=db_client.id,
+            full_name=db_client.full_name,
+            phone=db_client.phone,
+            license_number=db_client.license_number,
+            birth_date=str(db_client.birth_date) if db_client.birth_date else None
+        )
+
+    @app.put("/clients/{client_id}", response_model=ClientResponse)
+    def update_client(client_id: int, client: ClientCreate, db: Session = Depends(get_db)):
+        db_client = db.query(Client).filter(Client.id == client_id).first()
+        if not db_client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        db_client.full_name = client.full_name
+        db_client.phone = client.phone
+        db_client.license_number = client.license_number
+        db_client.birth_date = date.fromisoformat(client.birth_date)
+        db.commit()
+        db.refresh(db_client)
+        return ClientResponse(
+            id=db_client.id,
+            full_name=db_client.full_name,
+            phone=db_client.phone,
+            license_number=db_client.license_number,
+            birth_date=str(db_client.birth_date) if db_client.birth_date else None
+        )
+
+    @app.delete("/clients/{client_id}")
+    def delete_client(client_id: int, db: Session = Depends(get_db)):
+        db_client = db.query(Client).filter(Client.id == client_id).first()
+        if not db_client:
+            raise HTTPException(status_code=404, detail="Client not found")
+        db.delete(db_client)
+        db.commit()
+        return {"message": "Client deleted"}
+
+# Эндпоинты для автомобилей
+def setup_car_endpoints(app):
+    @app.get("/cars", response_model=List[CarResponse])
+    def get_cars(db: Session = Depends(get_db)):
+        cars = db.query(Car).all()
+        return [
+            CarResponse(
+                id=c.id,
+                brand=c.brand,
+                model=c.model,
+                year=c.year,
+                color=c.color,
+                license_plate=c.plate,
+                price=c.price
+            ) for c in cars
+        ]
+
+    @app.post("/cars", response_model=CarResponse)
+    def create_car(car: CarCreate, db: Session = Depends(get_db)):
+        existing = db.query(Car).filter(Car.plate == car.plate).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Car with this plate already exists")
+        db_car = Car(**car.dict())
+        db.add(db_car)
+        db.commit()
+        db.refresh(db_car)
+        return CarResponse(
+            id=db_car.id,
+            brand=db_car.brand,
+            model=db_car.model,
+            year=db_car.year,
+            color=db_car.color,
+            license_plate=db_car.plate,
+            price=db_car.price
+        )
+
+    @app.put("/cars/{car_id}", response_model=CarResponse)
+    def update_car(car_id: int, car: CarUpdate, db: Session = Depends(get_db)):
+        db_car = db.query(Car).filter(Car.id == car_id).first()
+        if not db_car:
+            raise HTTPException(status_code=404, detail="Car not found")
+        db_car.color = car.color
+        db_car.plate = car.plate
+        db_car.price = car.price
+        db.commit()
+        db.refresh(db_car)
+        return CarResponse(
+            id=db_car.id,
+            brand=db_car.brand,
+            model=db_car.model,
+            year=db_car.year,
+            color=db_car.color,
+            license_plate=db_car.plate,
+            price=db_car.price
+        )
+
+    @app.delete("/cars/{car_id}")
+    def delete_car(car_id: int, db: Session = Depends(get_db)):
+        db_car = db.query(Car).filter(Car.id == car_id).first()
+        if not db_car:
+            raise HTTPException(status_code=404, detail="Car not found")
+        db.delete(db_car)
+        db.commit()
+        return {"message": "Car deleted"}
+
+# Эндпоинты для договоров
+def setup_contract_endpoints(app):
+    @app.get("/contracts", response_model=List[ContractResponse])
+    def get_contracts(db: Session = Depends(get_db)):
+        contracts = db.query(Contract).options(joinedload(Contract.client), joinedload(Contract.car)).all()
+        return [
+            ContractResponse(
+                id=c.id,
+                client=ClientResponse(
+                    id=c.client.id,
+                    full_name=c.client.full_name,
+                    phone=c.client.phone,
+                    license_number=c.client.license_number,
+                    birth_date=str(c.client.birth_date) if c.client.birth_date else None
+                ),
+                car=CarResponse(
+                    id=c.car.id,
+                    brand=c.car.brand,
+                    model=c.car.model,
+                    year=c.car.year,
+                    color=c.car.color,
+                    license_plate=c.car.plate,
+                    price=c.car.price
+                ),
+                start_date=str(c.start_date),
+                end_date=str(c.end_date),
+                payment_date=str(c.payment_date),
+                amount=c.amount,
+                status=c.status
+            ) for c in contracts
+        ]
+
+    @app.post("/contracts", response_model=ContractResponse)
+    def create_contract(contract: ContractCreate, db: Session = Depends(get_db)):
+        client = db.query(Client).filter(Client.id == contract.client_id).first()
+        car = db.query(Car).filter(Car.id == contract.car_id).first()
+        if not client or not car:
+            raise HTTPException(status_code=404, detail="Client or Car not found")
+        db_contract = Contract(**contract.dict())
+        db_contract.start_date = date.fromisoformat(contract.start_date)
+        db_contract.end_date = date.fromisoformat(contract.end_date)
+        db_contract.payment_date = date.fromisoformat(contract.payment_date)
+        db.add(db_contract)
+        db.commit()
+        db.refresh(db_contract)
+        # Возвращаем полный объект
+        full_contract = db.query(Contract).options(joinedload(Contract.client), joinedload(Contract.car)).filter(Contract.id == db_contract.id).first()
+        return ContractResponse(
+            id=full_contract.id,
+            client=ClientResponse(
+                id=full_contract.client.id,
+                full_name=full_contract.client.full_name,
+                phone=full_contract.client.phone,
+                license_number=full_contract.client.license_number,
+                birth_date=str(full_contract.client.birth_date) if full_contract.client.birth_date else None
+            ),
+            car=CarResponse(
+                id=full_contract.car.id,
+                brand=full_contract.car.brand,
+                model=full_contract.car.model,
+                year=full_contract.car.year,
+                color=full_contract.car.color,
+                license_plate=full_contract.car.plate,
+                price=full_contract.car.price
+            ),
+            start_date=str(full_contract.start_date),
+            end_date=str(full_contract.end_date),
+            payment_date=str(full_contract.payment_date),
+            amount=full_contract.amount,
+            status=full_contract.status
+        )
