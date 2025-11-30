@@ -4,31 +4,31 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-# Марка
+# Марка автомобиля
 class Brand(Base):
     __tablename__ = "brands"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
 
-# Модель
+# Модель автомобиля
 class Model(Base):
     __tablename__ = "models"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
 
-# Паркинг
+# Модель для паркинга
 class Parking(Base):
     __tablename__ = "parkings"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
 
-# Сотрудник
+# Модель для сотрудника
 class Employee(Base):
     __tablename__ = "employees"
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String, index=True)
 
-# Платёж
+# Модель для платежа
 class Payment(Base):
     __tablename__ = "payments"
     id = Column(Integer, primary_key=True, index=True)
@@ -37,7 +37,7 @@ class Payment(Base):
     amount = Column(Float)
     contract = relationship("Contract", back_populates="payments")
 
-# Страховка
+# Модель для страховки
 class Insurance(Base):
     __tablename__ = "insurances"
     id = Column(Integer, primary_key=True, index=True)
@@ -45,7 +45,7 @@ class Insurance(Base):
     cost = Column(Float)
     contract = relationship("Contract", back_populates="insurances")
 
-# История обслуживания
+# Модель для истории обслуживания
 class Maintenance(Base):
     __tablename__ = "maintenances"
     id = Column(Integer, primary_key=True, index=True)
@@ -55,7 +55,7 @@ class Maintenance(Base):
     cost = Column(Float)
     car = relationship("Car", back_populates="maintenances")
 
-# Клиент
+# Модель для клиента
 class Client(Base):
     __tablename__ = "clients"
     id = Column(Integer, primary_key=True, index=True)
@@ -65,7 +65,7 @@ class Client(Base):
     birth_date = Column(Date)
     contracts = relationship("Contract", back_populates="client")
 
-# Автомобиль
+# Модель для автомобиля
 class Car(Base):
     __tablename__ = "cars"
     id = Column(Integer, primary_key=True, index=True)
@@ -77,19 +77,3 @@ class Car(Base):
     price = Column(Float)
     maintenances = relationship("Maintenance", back_populates="car")
     contracts = relationship("Contract", back_populates="car")
-
-# Договор
-class Contract(Base):
-    __tablename__ = "contracts"
-    id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("clients.id"))
-    car_id = Column(Integer, ForeignKey("cars.id"))
-    start_date = Column(Date)
-    end_date = Column(Date)
-    payment_date = Column(Date)
-    amount = Column(Float)
-    status = Column(String, default="active")
-    client = relationship("Client", back_populates="contracts")
-    car = relationship("Car", back_populates="contracts")
-    payments = relationship("Payment", back_populates="contract")
-    insurances = relationship("Insurance", back_populates="contract")
