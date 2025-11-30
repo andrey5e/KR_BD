@@ -649,3 +649,17 @@
                 }
             }
         }
+        
+        async function deleteInsurance(id) {
+            if (confirm('Вы уверены, что хотите удалить эту страховку?')) {
+                try {
+                    await fetch(`${apiUrl}/insurances/${id}`, { method: 'DELETE' });
+                    loadInsurances();
+                } catch (err) {
+                    console.error('Ошибка удаления:', err);
+                    alert('Не удалось удалить страховку.');
+                }
+            }
+        }
+
+
