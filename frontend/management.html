@@ -857,4 +857,20 @@
                 setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
             });
 
+            document.getElementById('carSelect').addEventListener('change', calculateAmount);
+            document.getElementById('startDate').addEventListener('change', calculateAmount);
+            document.getElementById('endDate').addEventListener('change', calculateAmount);
 
+            document.getElementById('contractSelect').addEventListener('change', calculateInsuranceCost);
+            document.getElementById('insuranceCost').addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const formatted = formatAmount(e.target.value);
+                e.target.value = formatted;
+                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
+            });
+        });
+
+        loadClients();
+    </script>
+</body>
+</html>
