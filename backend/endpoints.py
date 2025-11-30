@@ -609,3 +609,56 @@ def setup_contract_endpoints(app):
             amount=full_contract.amount,
             status=full_contract.status
         )
+
+    @app.put("/contracts/{contract_id}", response_model=ContractResponse)
+    def update_contract(contract_id: int, contract: ContractCreate, db: Session = Depends(get_db)):
+        db_contract = db.query(Contract).filter(Contract.id == contract_id).first()
+        if not db_contract:
+            raise HTTPException(status_code=404, detail="Contract not found")
+        client = db.query(Client).filter(Client.id == contract.client_id).first()
+        car = db.query(Car).filter(Car.id == contract.car_id).first()
+        if not client or not car:
+            raise HTTPException(status_code=404, detail="Client or Car not found")
+        db_contract.client_id = contract.client_id
+        db_contract.car_id = contract.car_id
+        db_contract.start_date = date.fromisoformat(contract.start_date)
+        db_contract.end_date = date.fromisoformat(contract.end_date)
+        db_contract.payment_date = date.fromisoformat(contract.payment_date)
+        db_contract.amount = contract.amount
+        db.commit()
+        db.refresh(db_contract)
+        # Возвращаем полный объект
+        full_contract = db.query(Contract).options(joinedload(Contract.client), joinedload(Contract.car)).filter(Contract.id == db_contract.id).first()
+        return ContractResponse(
+            id=full_contract.id,
+            client=ClientResponse(
+                id=full_contract.client.id,
+                full_name=full_contract.client.full_name,
+                phone=full_contract.client.phone,
+                license_number=full_contract.client.license_number,
+                birth_date=str(full_contract.client.birth_date) if full_contract.client.birth_date else None
+            ),
+            car=CarResponse(
+                id=full_contract.car.id,
+                brand=full_contract.car.brand,
+                model=full_contract.car.model,
+                year=full_contract.car.year,
+                color=full_contract.car.color,
+                license_plate=full_contract.car.plate,
+                price=full_contract.car.price
+            ),
+            start_date=str(full_contract.start_date),
+            end_date=str(full_contract.end_date),
+            payment_date=str(full_contract.payment_date),
+            amount=full_contract.amount,
+            status=full_contract.status
+        )
+
+    @app.delete("/contracts/{contract_id}")
+    def delete_contract(contract_id: int, db: Session = Depends(get_db)):
+        db_contract = db.query(Contract).filter(Contract.id == contract_id).first()
+        if not db_contract:
+            raise HTTPException(status_code=404, detail="Contract not found")
+        db.delete(db_contract)
+        db.commit()
+        return {"message": "Contract deleted"}
