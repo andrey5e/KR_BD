@@ -36,7 +36,7 @@
         nav a { text-decoration: none; padding: 10px; background: var(--nav-bg); color: var(--text-color); margin: 5px; border-radius: 5px; transition: background 0.3s; }
         nav a.active { background: var(--nav-hover); color: white; }
         nav a:hover { background: var(--nav-hover); }
-        .tabs { display: flex; margin-top: 20px; margin-bottom: 0px; }
+        .tabs { display: flex; margin-top: 20px; margin-bottom: 0px; flex-wrap: wrap; }
         .tab { text-decoration: none; padding: 10px; background: var(--nav-bg); color: var(--text-color); margin: 5px; display: inline-block; border-radius: 5px 5px 0 0; cursor: pointer; transition: background 0.3s; }
         .tab.active { background: var(--nav-hover); color: white; }
         .tab:hover { background: var(--nav-hover); }
@@ -56,8 +56,9 @@
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: black; }
         form { display: flex; flex-direction: column; }
-        input, select { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: var(--li-bg); color: var(--text-color); }
-        input:focus, select:focus { border-color: #007bff; outline: none; }
+        input, select, textarea { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: var(--li-bg); color: var(--text-color); }
+        input:focus, select:focus, textarea:focus { border-color: #007bff; outline: none; }
+        textarea { resize: vertical; }
         .contract-details { font-size: 0.9em; color: #665; }
         
         #theme-toggle {
@@ -94,6 +95,8 @@
     <div class="tabs">
         <div class="tab active" data-tab="clients">Клиенты</div>
         <div class="tab" data-tab="contracts">Договоры</div>
+        <div class="tab" data-tab="insurances">Страхование</div>
+        <div class="tab" data-tab="maintenances">Тех. обслуживание</div>
     </div>
 
     <div id="clients" class="tab-content active">
@@ -110,6 +113,20 @@
         <ul id="activeContracts"></ul>
         <h3>Завершённые договоры</h3>
         <ul id="completedContracts"></ul>
+    </div>
+
+    <div id="insurances" class="tab-content">
+        <h2 class="centered">Управление страхованием</h2>
+        <button id="addInsuranceBtn">Добавить страховку</button>
+        <h3>Список страховок</h3>
+        <ul id="insuranceList"></ul>
+    </div>
+
+    <div id="maintenances" class="tab-content">
+        <h2 class="centered">Управление тех. обслуживанием</h2>
+        <button id="addMaintenanceBtn">Добавить обслуживание</button>
+        <h3>Список обслуживаний</h3>
+        <ul id="maintenanceList"></ul>
     </div>
 
     <div id="clientModal" class="modal">
@@ -147,8 +164,42 @@
                 <label for="paymentDate">Дата платежа:</label>
                 <input type="date" id="paymentDate" required>
                 <label for="amount">Сумма (руб.):</label>
-                <input type="text" id="amount" pattern="[0-9\s]*" minlength="1" required placeholder="Итоговая сумма">
+                <input type="text" id="amount" pattern="[0-9\s]*" minlength="1" required placeholder="Итоговая сумма (автоматически рассчитывается)">
                 <button type="submit">Оформить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="insuranceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeInsuranceModal">&times;</span>
+            <h2 id="insuranceModalTitle">Добавить страховку</h2>
+            <form id="insuranceForm">
+                <input type="hidden" id="insuranceId">
+                <label for="contractSelect">Договор:</label>
+                <select id="contractSelect" required></select>
+                <label for="insuranceCost">Стоимость (руб.):</label>
+                <input type="text" id="insuranceCost" pattern="[0-9\s]*" minlength="1" required placeholder="70% от суммы аренды">
+                <button type="submit">Сохранить</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="maintenanceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeMaintenanceModal">&times;</span>
+            <h2 id="maintenanceModalTitle">Добавить обслуживание</h2>
+            <form id="maintenanceForm">
+                <input type="hidden" id="maintenanceId">
+                <label for="carSelectMaintenance">Авто (Гос номер):</label>
+                <select id="carSelectMaintenance" required></select>
+                <label for="maintenanceDescription">Описание:</label>
+                <textarea id="maintenanceDescription" required></textarea>
+                <label for="maintenanceDate">Дата:</label>
+                <input type="date" id="maintenanceDate" required>
+                <label for="maintenanceCost">Стоимость (руб.):</label>
+                <input type="number" id="maintenanceCost" step="0.01" required>
+                <button type="submit">Сохранить</button>
             </form>
         </div>
     </div>
@@ -192,6 +243,8 @@
             document.getElementById(tab).classList.add('active');
             if (tab === 'clients') loadClients();
             else if (tab === 'contracts') { loadClientsForSelect(); loadCarsForSelect(); loadContracts(); }
+            else if (tab === 'insurances') { loadContractsForSelect(); loadInsurances(); }
+            else if (tab === 'maintenances') { loadCarsForSelectMaintenance(); loadMaintenances(); }
         }
 
         async function loadClients() {
@@ -327,6 +380,7 @@
                 cars.forEach(car => {
                     const option = document.createElement('option');
                     option.value = car.id;
+                    option.setAttribute('data-price', car.price);
                     option.textContent = `${car.brand} ${car.model} (${car.license_plate})`;
                     select.appendChild(option);
                 });
@@ -405,6 +459,30 @@
             }
         }
 
+        function calculateAmount() {
+            const carSelect = document.getElementById('carSelect');
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const amountInput = document.getElementById('amount');
+
+            if (!carSelect.value || !startDate || !endDate) {
+                amountInput.value = '';
+                return;
+            }
+
+            const selectedOption = carSelect.options[carSelect.selectedIndex];
+            const pricePerDay = parseInt(selectedOption.getAttribute('data-price'), 10);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (end <= start) {
+                amountInput.value = '';
+                return;
+            }
+            const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            const totalAmount = pricePerDay * days;
+            amountInput.value = formatAmount(totalAmount.toString());
+        }
+
         document.getElementById('addClientBtn').addEventListener('click', () => openClientModal());
         document.getElementById('addContractBtn').addEventListener('click', () => {
             document.getElementById('contractModal').style.display = 'block';
@@ -444,60 +522,130 @@
             }
         });
 
-        function formatPhone(value) {
-            if (!value.startsWith('+7')) {
-                value = '+7' + value.replace(/\D/g, '');
+        async function loadContractsForSelect() {
+            try {
+                const response = await fetch(`${apiUrl}/contracts`);
+                const contracts = await response.json();
+                const select = document.getElementById('contractSelect');
+                select.innerHTML = '<option value="">Выберите договор</option>';
+                contracts.forEach(contract => {
+                    const option = document.createElement('option');
+                    option.value = contract.id;
+                    option.setAttribute('data-daily-price', contract.car.price);
+                    option.setAttribute('data-start-date', contract.start_date);
+                    option.setAttribute('data-end-date', contract.end_date);
+                    option.textContent = `Договор #${contract.id} (${contract.client.full_name} - ${contract.car.brand} ${contract.car.model})`;
+                    select.appendChild(option);
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки договоров для выбора:', err);
+                alert('Не удалось загрузить договоры для выбора.');
+            }
+        }
+
+        function calculateInsuranceCost() {
+            const contractSelect = document.getElementById('contractSelect');
+            const insuranceCostInput = document.getElementById('insuranceCost');
+
+            if (!contractSelect.value) {
+                insuranceCostInput.value = '';
+                return;
             }
 
-            const afterPlus7 = value.substring(2).replace(/\D/g, '');
-            const digits = afterPlus7.slice(0, 10);
-            let formatted = '+7';
-            if (digits.length >= 1) formatted += ' (' + digits.slice(0, 3);
-            if (digits.length >= 4) formatted += ') ' + digits.slice(3, 6);
-            if (digits.length >= 7) formatted += '-' + digits.slice(6, 8);
-            if (digits.length >= 9) formatted += '-' + digits.slice(8, 10);
-            return formatted;
+            const selectedOption = contractSelect.options[contractSelect.selectedIndex];
+            const dailyPrice = parseInt(selectedOption.getAttribute('data-daily-price'), 10);
+            const startDate = selectedOption.getAttribute('data-start-date');
+            const endDate = selectedOption.getAttribute('data-end-date');
+
+            if (!startDate || !endDate) {
+                insuranceCostInput.value = '';
+                return;
+            }
+
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            if (end <= start) {
+                insuranceCostInput.value = '';
+                return;
+            }
+
+            const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+            const totalRental = dailyPrice * days;
+            const insuranceCost = 0.7 * totalRental;
+            insuranceCostInput.value = formatAmount(insuranceCost.toString());
         }
 
-        function formatLicense(value) {
-            const digits = value.replace(/\D/g, '');
-            const limitedDigits = digits.slice(0, 10);
-            let formatted = '';
-            if (limitedDigits.length > 0) formatted += limitedDigits.slice(0, 2);
-            if (limitedDigits.length > 2) formatted += ' ' + limitedDigits.slice(2, 4);
-            if (limitedDigits.length > 4) formatted += ' ' + limitedDigits.slice(4, 10);
-            return formatted;
+        async function loadInsurances() {
+            try {
+                const response = await fetch(`${apiUrl}/insurances`);
+                const insurances = await response.json();
+                const list = document.getElementById('insuranceList');
+                list.innerHTML = '';
+                insurances.forEach(insurance => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div>
+                            <strong>Страховка #${insurance.id}</strong><br>
+                            Клиент: ${insurance.contract.client.full_name}<br>
+                            Авто: ${insurance.contract.car.brand} ${insurance.contract.car.model} (${insurance.contract.car.license_plate})<br>
+                            Стоимость: ${insurance.cost} руб.
+                        </div>
+                        <div>
+                            <button class="deleteInsuranceBtn danger" data-id="${insurance.id}">Удалить</button>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+                document.querySelectorAll('.deleteInsuranceBtn').forEach(btn => {
+                    btn.addEventListener('click', () => deleteInsurance(btn.getAttribute('data-id')));
+                });
+            } catch (err) {
+                console.error('Ошибка загрузки страховок:', err);
+                alert('Не удалось загрузить страховки. Проверьте сервер.');
+            }
         }
 
-        function formatAmount(value) {
-            const digits = value.replace(/\D/g, '');
-            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        function openInsuranceModal(id = null) {
+            document.getElementById('insuranceModal').style.display = 'block';
+            document.getElementById('insuranceModalTitle').textContent = 'Добавить страховку';
+            document.getElementById('insuranceForm').reset();
+            document.getElementById('insuranceCost').value = '';
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('phone').addEventListener('input', function(e) {
-                const cursorPos = e.target.selectionStart;
-                const formatted = formatPhone(e.target.value);
-                e.target.value = formatted;
-                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
-            });
-
-            document.getElementById('license').addEventListener('input', function(e) {
-                const cursorPos = e.target.selectionStart;
-                const formatted = formatLicense(e.target.value);
-                e.target.value = formatted;
-                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
-            });
-
-            document.getElementById('amount').addEventListener('input', function(e) {
-                const cursorPos = e.target.selectionStart;
-                const formatted = formatAmount(e.target.value);
-                e.target.value = formatted;
-                setTimeout(() => e.target.setSelectionRange(cursorPos, cursorPos), 0);
-            });
+        
+        document.getElementById('closeInsuranceModal').addEventListener('click', () => closeInsuranceModal());
+        
+        function closeInsuranceModal() {
+            document.getElementById('insuranceModal').style.display = 'none';
+        }
+        
+        document.getElementById('insuranceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                contract_id: document.getElementById('contractSelect').value,
+                cost: parseFloat(document.getElementById('insuranceCost').value.replace(/\s/g, ''))
+            };
+            try {
+                const response = await fetch(`${apiUrl}/insurances`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (response.ok) {
+                    closeInsuranceModal();
+                    loadInsurances();
+                } else {
+                    alert('Ошибка сохранения страховки: ' + response.status);
+                }
+            } catch (err) {
+                console.error('Ошибка сохранения:', err);
+                alert('Не удалось сохранить страховку. Проверьте сервер.');
+            }
         });
-
-        loadClients();
-    </script>
-</body>
-</html>
+        
+        async function deleteInsurance(id) {
+            if (confirm('Вы уверены, что хотите удалить эту страховку?')) {
+                try {
+                    await fetch(`${apiUrl}/insurances/${id}`, { method: 'DELETE' });
+                    loadInsurances();
+                } catch (err) {
+                    console.error('Ошибка удаления:', err);
+                    alert('Не удалось удалить страховку.');
+                }
+            }
+        }
