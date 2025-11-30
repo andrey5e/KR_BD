@@ -77,3 +77,19 @@ class Car(Base):
     price = Column(Float)
     maintenances = relationship("Maintenance", back_populates="car")
     contracts = relationship("Contract", back_populates="car")
+
+# Модель для договора
+class Contract(Base):
+    __tablename__ = "contracts"
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    car_id = Column(Integer, ForeignKey("cars.id"))
+    start_date = Column(Date)
+    end_date = Column(Date)
+    payment_date = Column(Date)
+    amount = Column(Float)
+    status = Column(String, default="active")
+    client = relationship("Client", back_populates="contracts")
+    car = relationship("Car", back_populates="car")
+    payments = relationship("Payment", back_populates="contract")
+    insurances = relationship("Insurance", back_populates="contract")
